@@ -35,12 +35,11 @@
 ## 🛠️ Tech Stack
 
 - ⚛️ React Native
-- 📱 Expo
+- 🧠 Redux or Context API (optional)
+- 📱 Expo / React Native CLI
 - 🔔 React Native Push Notifications
-- 💾 AsyncStorage
-- ⚙️ Context API for state management
-- 🎨 NativeWind (Tailwind CSS for React Native)
-- 📊 React Native Chart Kit (or Victory Native)
+- 💾 AsyncStorage / Firebase
+- 📊 Victory Native / React Native Chart Kit
 
 ---
 
@@ -48,7 +47,7 @@
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/SaliniSundaran2002/HydrateMe.git
+git clone https://github.com/yourusername/HydrateMe.git
 cd HydrateMe
 
 # 2. Install dependencies
@@ -60,6 +59,24 @@ npx expo start
 
 > ✅ Make sure Node.js, Expo CLI, and either an emulator or the Expo Go app are installed.
 
+---
+
+## 📂 Folder Structure
+
+```
+HydrateMe/
+├── assets/
+├── components/
+│   ├── WaterCard.js
+├── screens/
+│   ├── HomeScreen.js
+│   ├── AddWaterScreen.js
+│   ├── ProgressScreen.js
+├── utils/
+├── App.js
+├── app.json
+└── package.json
+```
 
 ---
 
@@ -84,8 +101,17 @@ If using Firebase:
 
 **Salini Sundaran**  
 📧 [salinisundaran2002@gmail.com](mailto:salinisundaran2002@gmail.com)  
-🔗 GitHub: [@SaliniSundaran2002](https://github.com/SaliniSundaran2002)
+🔗 GitHub: [@yourusername](https://github.com/yourusername)
 
 ---
 
+## 📄 License
 
+This project is licensed under the **MIT License**.  
+See the [LICENSE](LICENSE) file for details.
+
+---
+
+## 🙌 Contribution
+
+Feel free to fork this repository and submit a pull request. All contributions are welcome!
