@@ -1,38 +1,115 @@
 import React, { useRef, useEffect } from 'react';
-import { View, StyleSheet } from 'react-native';
-import LottieView from 'lottie-react-native';
+import {
+  View,
+  StyleSheet,
+  Animated,
+  Easing,
+  Text,
+} from 'react-native';
+import { Audio } from 'expo-av';
 
-export default function AnimatedSequence() {
-  const drop = useRef(null);
-  const fill = useRef(null);
-  const drink = useRef(null);
-  const zoom = useRef(null);
+export default function WaterWithWaveAndSound() {
+  const fillAnim = useRef(new Animated.Value(0)).current;
+  const waveAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    drop.current?.play();
-    drop.current?.addListener(({ isPlaying }) => {
-      if (!isPlaying) fill.current?.play();
+    // Start water fill animation
+    Animated.timing(fillAnim, {
+      toValue: 1,
+      duration: 3000,
+      easing: Easing.inOut(Easing.ease),
+      useNativeDriver: false,
+    }).start(() => {
+      // Start wave animation loop once filled
+      Animated.loop(
+        Animated.timing(waveAnim, {
+          toValue: 1,
+          duration: 1000,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        })
+      ).start();
     });
-    fill.current?.addListener(({ isPlaying }) => {
-      if (!isPlaying) drink.current?.play();
-    });
-    drink.current?.addListener(({ isPlaying }) => {
-      if (!isPlaying) zoom.current?.play();
-    });
+
+    async function playSound() {
+      const { sound } = await Audio.Sound.createAsync(
+        require('../../assets/sounds/drop.mp3') // add this to your assets
+      );
+      sound.setPositionAsync(0);
+      await sound.playAsync();
+    }
+
+    playSound();
+
+    return () => {};
   }, []);
+
+  // Interpolates fill with glass height
+  const fillHeight = fillAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0%', '100%'],
+  });
+
+  // Wave translation
+  const translateX = waveAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0%', '100%'],
+  });
 
   return (
     <View style={styles.container}>
-      <LottieView ref={drop} source={require('./assets/animations/waterDrops.json')} loop={false} style={styles.anim} />
-      <LottieView ref={fill} source={require('./assets/animations/glassFill.json')} loop={false} style={styles.anim} />
-      <LottieView ref={drink} source={require('./assets/animations/drinkWater.json')} loop={false} style={styles.anim} />
-      <LottieView ref={zoom} source={require('./assets/animations/textZoom.json')} loop={false} style={styles.zoom} />
+      <Text style={styles.title}>Hydrate Me</Text>
+      <View style={styles.glass}>
+        <Animated.View
+          style={[
+            styles.water,
+            { height: fillHeight }
+          ]}
+        >
+          <Animated.View
+            style={[
+              styles.wave,
+              { transform: [{ translateX }] }
+            ]}
+          />
+        </Animated.View>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  anim: { width: 200, height: 200 },
-  zoom: { width: 300, height: 100, marginTop: 20 },
+  container: {
+    flex: 1,
+    backgroundColor: '#E0F7FA',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  title: {
+    marginBottom: 20,
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#0072ff',
+  },
+  glass: {
+    width: 120,
+    height: 240,
+    borderColor: '#0072ff',
+    borderWidth: 4,
+    borderRadius: 10,
+    overflow: 'hidden',
+    justifyContent: 'flex-end',
+  },
+  water: {
+    width: '100%',
+    backgroundColor: '#00c6ff',
+    position: 'absolute',
+    bottom: 0,
+  },
+  wave: {
+    width: '200%',
+    height: 20,
+    backgroundColor: 'rgba(255,255,255,0.4)',
+    borderRadius: 10,
+  },
 });
