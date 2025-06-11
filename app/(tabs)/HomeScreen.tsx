@@ -7,12 +7,13 @@ import {
   Animated,
   Alert,
   ScrollView,
-  Modal,
+  TextInput,
 } from 'react-native';
 import { Calendar } from 'react-native-calendars';
 import moment from 'moment';
 import { FontAwesome, FontAwesome6 } from '@expo/vector-icons';
 import Entypo from '@expo/vector-icons/Entypo';
+import WaterTracker from './WaterTracker';
 
 type WaterEntry = {
   date: string;
@@ -29,24 +30,52 @@ export default function HomeScreen() {
   const [history, setHistory] = useState<WaterEntry[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [selectedDate, setSelectedDate] = useState(moment().format('YYYY-MM-DD'));
-  const [showUsageModal, setShowUsageModal] = useState(false);
+  const [goalMl, setGoalMl] = useState(GOAL_ML);
+  const [showCalculator, setShowCalculator] = useState(true);
+  const [inputGoal, setInputGoal] = useState(String(GOAL_ML));
 
-  const usageText = `
-  Welcome to Hydrate Me!
-  
-  - Tap 'Add 250ml' button to add a glass of water to your daily goal.
-  - Track your water intake with the water bottle graphic.
-  - Check your daily history using the calendar and history toggle.
-  - Stay hydrated and healthy!
-  `;
+  const calculateGoal = () => {
+    const parsedGoal = parseInt(inputGoal, 10);
+    if (isNaN(parsedGoal) || parsedGoal <= 0) {
+      Alert.alert("Invalid Input", "Please enter a valid number for your water goal.");
+      return;
+    }
+    setGoalMl(parsedGoal);
+    setConsumed(0);
+    setHistory([]);
+    Animated.timing(fillHeight, {
+      toValue: 0,
+      duration: 500,
+      useNativeDriver: false,
+    }).start();
+    setShowCalculator(false);
+  };
+
+  if (showCalculator) {
+    return (
+      <View style={styles.calculatorContainer}>
+        <Text style={styles.calculatorTitle}>Set Your Daily Water Goal</Text>
+        <TextInput
+          style={styles.calculatorInput}
+          keyboardType="numeric"
+          value={inputGoal}
+          onChangeText={setInputGoal}
+          placeholder="Enter goal in ml"
+        />
+        <TouchableOpacity style={styles.button} onPress={calculateGoal}>
+          <Text style={styles.buttonText}>Set Goal</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   const addWater = () => {
-    if (consumed + CUP_ML > GOAL_ML) return;
+    if (consumed + CUP_ML > goalMl) return;
 
     const newConsumed = consumed + CUP_ML;
     setConsumed(newConsumed);
 
-    const fillPercent = (newConsumed / GOAL_ML) * 100;
+    const fillPercent = (newConsumed / goalMl) * 100;
     const today = moment().format('YYYY-MM-DD');
     const timestamp = new Date().toLocaleTimeString();
     setHistory(prev => [...prev, { date: today, time: timestamp, amount: CUP_ML }]);
@@ -57,7 +86,7 @@ export default function HomeScreen() {
       useNativeDriver: false,
     }).start();
 
-    if (newConsumed === GOAL_ML) {
+    if (newConsumed === goalMl) {
       Alert.alert("🎉 Goal Reached", "You’ve successfully consumed your water goal for the day!");
     }
   };
@@ -67,10 +96,22 @@ export default function HomeScreen() {
   return (
     <View style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={true}>
-        <Text style={styles.title}>Hydrate Me <FontAwesome6 name="bottle-water" size={32} color="##0000FF" /></Text>
+        <Text style={styles.title}>
+          Hydrate Me <FontAwesome6 name="bottle-water" size={32} color="#0000FF" />
+        </Text>
+
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginBottom: 10 }}>
+          <TouchableOpacity onPress={() => setShowHistory(!showHistory)} style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <FontAwesome name="clock-o" size={24} color="#0077b6" />
+            <Text style={{ marginLeft: 5, color: '#0077b6', fontSize: 16 }}>Set Reminder</Text>
+          </TouchableOpacity>
+        </View>
+
+        {showHistory && <WaterTracker />}
+
 
         <Text style={styles.progressText}>
-          {consumed}ml / {GOAL_ML}ml
+          {consumed}ml / {goalMl}ml
         </Text>
 
         <View style={styles.bottleSection}>
@@ -78,12 +119,13 @@ export default function HomeScreen() {
             <View style={styles.bottleCap} />
             <View style={styles.bottleNeck} />
             <View style={styles.bottleBody}>
-              {Array.from({ length: 5 }, (_, i) => {
-                const ml = i * 500;
-                const topPercent = 100 - (ml / GOAL_ML) * 100;
+              {Array.from({ length: Math.floor(goalMl / 250) + 1 }, (_, i) => {
+                const ml = i * 250;
+                const topPercent = 100 - (ml / goalMl) * 100;
+
                 return (
                   <Text
-                    key={ml}
+                    key={i}
                     style={[
                       styles.measurementText,
                       {
@@ -91,6 +133,7 @@ export default function HomeScreen() {
                         left: 5,
                         color: '#004e64',
                         fontSize: 12,
+                        position: 'absolute',
                       },
                     ]}
                   >
@@ -98,6 +141,8 @@ export default function HomeScreen() {
                   </Text>
                 );
               })}
+
+
 
               <Animated.View
                 style={[
@@ -115,7 +160,10 @@ export default function HomeScreen() {
         </View>
 
         <TouchableOpacity style={styles.button} onPress={addWater}>
-          <Text style={styles.buttonText}>Add 250ml (1 <FontAwesome6 name="glass-water" size={15} color="white" />)<Entypo name="drop" size={24} color="white" /> </Text>
+          <Text style={styles.buttonText}>
+            Add 250ml (1 <FontAwesome6 name="glass-water" size={15} color="white" />)
+            <Entypo name="drop" size={24} color="white" />
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -155,42 +203,10 @@ export default function HomeScreen() {
           </>
         )}
       </ScrollView>
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={showUsageModal}
-        onRequestClose={() => setShowUsageModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <ScrollView>
-              <Text style={styles.modalTitle}>Use of App</Text>
-              <Text style={styles.modalText}>{usageText}</Text>
-            </ScrollView>
-            <TouchableOpacity
-              style={styles.modalCloseButton}
-              onPress={() => setShowUsageModal(false)}
-            >
-              <Text style={styles.modalCloseButtonText}>Close</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
 
 
-      {/* Footer */}
-      <View style={styles.footer}>
-        <View style={styles.footerContent}>
-          <FontAwesome name="tint" size={20} color="#fff" style={{ marginRight: 8 }} />
-          <Text style={styles.footerText}>Stay Hydrated – Your body will thank you!</Text>
-        </View>
-        <TouchableOpacity
-          onPress={() => setShowUsageModal(true)}
-          style={{ marginTop: 20 }}
-        >
-          <Text style={styles.useLink}>📘 Use of App</Text>
-        </TouchableOpacity>
-      </View>
+
+
     </View>
   );
 }
@@ -204,6 +220,29 @@ const styles = StyleSheet.create({
     paddingVertical: 30,
     paddingHorizontal: 20,
     paddingBottom: 80,
+  },
+  calculatorContainer: {
+    flex: 1,
+    backgroundColor: '#D6F6FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 30,
+  },
+  calculatorTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    color: '#0077b6',
+  },
+  calculatorInput: {
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#0077b6',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 18,
+    marginBottom: 20,
+    backgroundColor: '#fff',
   },
   title: {
     fontSize: 32,
@@ -300,59 +339,5 @@ const styles = StyleSheet.create({
     color: '#023e8a',
     marginBottom: 5,
   },
-  useLink: {
-    color: '#fff',
-    fontSize: 14,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    width: '100%',
-    maxHeight: '80%',
-    padding: 20,
-  },
-  modalTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 15,
-    color: '#0077b6',
-  },
-  modalText: {
-    fontSize: 16,
-    color: '#023e8a',
-  },
-  modalCloseButton: {
-    marginTop: 20,
-    backgroundColor: '#00b4d8',
-    paddingVertical: 12,
-    borderRadius: 25,
-    alignItems: 'center',
-  },
-  modalCloseButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  footer: {
-    backgroundColor: '#0077b6',
-    padding: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  footerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  footerText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '500',
-  },
+
 });

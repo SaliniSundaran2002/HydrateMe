@@ -7,72 +7,70 @@ import {
   Text,
 } from 'react-native';
 import { Audio } from 'expo-av';
+import MaskedView from '@react-native-masked-view/masked-view';
+import { LinearGradient } from 'expo-linear-gradient';
 
-export default function WaterWithWaveAndSound() {
+export default function WaterTitleAnimation() {
   const fillAnim = useRef(new Animated.Value(0)).current;
-  const waveAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Start water fill animation
+    // Animate water fill (used for both background and text)
     Animated.timing(fillAnim, {
       toValue: 1,
       duration: 3000,
       easing: Easing.inOut(Easing.ease),
       useNativeDriver: false,
-    }).start(() => {
-      // Start wave animation loop once filled
-      Animated.loop(
-        Animated.timing(waveAnim, {
-          toValue: 1,
-          duration: 1000,
-          easing: Easing.linear,
-          useNativeDriver: true,
-        })
-      ).start();
-    });
+    }).start();
 
+    // Play water drop sound
     async function playSound() {
       const { sound } = await Audio.Sound.createAsync(
-        require('../../assets/sounds/drop.mp3') // add this to your assets
+        require('../../assets/sounds/drop.mp3')
       );
       sound.setPositionAsync(0);
       await sound.playAsync();
     }
 
     playSound();
-
-    return () => {};
   }, []);
 
-  // Interpolates fill with glass height
+  // Interpolate water fill for background
   const fillHeight = fillAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ['0%', '100%'],
   });
 
-  // Wave translation
-  const translateX = waveAnim.interpolate({
+  // Interpolate translateY of gradient to simulate "water rising" inside the text
+  const gradientTranslateY = fillAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: ['0%', '100%'],
+    outputRange: [50, 0], // moves gradient up
   });
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Hydrate Me</Text>
-      <View style={styles.glass}>
-        <Animated.View
-          style={[
-            styles.water,
-            { height: fillHeight }
-          ]}
+      {/* Background Water Fill */}
+      <Animated.View style={[styles.fill, { height: fillHeight }]} />
+
+      {/* Title with Gradient Fill Animation */}
+      <View style={styles.titleContainer}>
+        <MaskedView
+          maskElement={<Text style={styles.title}>Hydrate Me</Text>}
         >
           <Animated.View
-            style={[
-              styles.wave,
-              { transform: [{ translateX }] }
-            ]}
-          />
-        </Animated.View>
+            style={{
+              height: 50,
+              width: 300,
+              transform: [{ translateY: gradientTranslateY }],
+            }}
+          >
+            <LinearGradient
+              colors={['#00c6ff', '#ffffff']}
+              start={{ x: 0.5, y: 1 }}
+              end={{ x: 0.5, y: 0 }}
+              style={{ flex: 1 }}
+            />
+          </Animated.View>
+        </MaskedView>
       </View>
     </View>
   );
@@ -84,32 +82,22 @@ const styles = StyleSheet.create({
     backgroundColor: '#E0F7FA',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  title: {
-    marginBottom: 20,
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#0072ff',
-  },
-  glass: {
-    width: 120,
-    height: 240,
-    borderColor: '#0072ff',
-    borderWidth: 4,
-    borderRadius: 10,
     overflow: 'hidden',
-    justifyContent: 'flex-end',
   },
-  water: {
-    width: '100%',
-    backgroundColor: '#00c6ff',
+  fill: {
     position: 'absolute',
     bottom: 0,
+    width: '100%',
+    backgroundColor: '#00c6ff',
   },
-  wave: {
-    width: '200%',
-    height: 20,
-    backgroundColor: 'rgba(255,255,255,0.4)',
-    borderRadius: 10,
+  titleContainer: {
+    marginBottom: 20,
+  },
+  title: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    color: 'black',
+    backgroundColor: 'transparent',
   },
 });

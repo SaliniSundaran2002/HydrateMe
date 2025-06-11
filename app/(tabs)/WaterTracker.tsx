@@ -1,26 +1,27 @@
-import React, { useEffect } from 'react';
-import { View, Text, Button, Platform, Alert } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, Button, TextInput, Alert } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 
-// Configure foreground behavior
+// Configure foreground notification behavior
 Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowBanner: true,
-      shouldPlaySound: true,
-      shouldSetBadge: false,
-    }),
-  });
-  
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
 
 export default function App() {
+  const [reminderInterval, setReminderInterval] = useState<string>('2'); // Default interval in hours
 
   useEffect(() => {
     registerForPushNotificationsAsync();
-    scheduleHydrationReminder(); // Auto-schedule on start
   }, []);
 
-  // Register permission
+  // Request permission
   async function registerForPushNotificationsAsync() {
     if (Device.isDevice) {
       const { status: existingStatus } = await Notifications.getPermissionsAsync();
@@ -33,18 +34,22 @@ export default function App() {
 
       if (finalStatus !== 'granted') {
         Alert.alert('Permission required', 'Enable notifications to get hydration reminders!');
-        return;
       }
     } else {
-      alert('Must use a physical device for Notifications');
+      Alert.alert('Device Required', 'Must use a physical device for Notifications');
     }
   }
 
-  // Schedule notification every 2 hours
+  // Schedule hydration reminder
   async function scheduleHydrationReminder() {
-    // Cancel previous to avoid duplication
-    await Notifications.cancelAllScheduledNotificationsAsync();
+    const intervalInHours = parseFloat(reminderInterval);
 
+    if (isNaN(intervalInHours) || intervalInHours <= 0) {
+      Alert.alert('Invalid Input', 'Please enter a valid number greater than 0.');
+      return;
+    }
+
+    // Cancel all previous notifications
     await Notifications.scheduleNotificationAsync({
       content: {
         title: "💧 Time to Drink Water!",
@@ -52,15 +57,33 @@ export default function App() {
         sound: true,
       },
       trigger: {
-        seconds: 2 * 60 * 60, // Every 2 hours
+        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, // ✅ Proper enum
+        seconds: intervalInHours * 3600,
         repeats: true,
       },
     });
+
+    Alert.alert('✅ Reminder Scheduled', `You will be reminded every ${intervalInHours} hour(s).`);
   }
 
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <Text style={{ fontSize: 22, marginBottom: 20 }}>🚰 Water Reminder App</Text>
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+    
+
+      <Text style={{ fontSize: 16, marginBottom: 10, color: "blue" }}>Select Reminder Interval:</Text>
+
+      <View style={{ flexDirection: 'row', marginBottom: 20 }}>
+      <Button title="1 Hour" onPress={() => setReminderInterval('1')} />
+      <View style={{ width: 10 }} />
+      <Button title="2 Hours" onPress={() => setReminderInterval('2')} />
+      <View style={{ width: 10 }} />
+      <Button title="3 Hours" onPress={() => setReminderInterval('3')} />
+      </View>
+
+      <Text style={{ fontSize: 16, marginBottom: 10, color: "blue" }}>
+      Selected Interval: {reminderInterval} hour(s)
+      </Text>
+
       <Button title="Schedule Hydration Reminder" onPress={scheduleHydrationReminder} />
     </View>
   );
