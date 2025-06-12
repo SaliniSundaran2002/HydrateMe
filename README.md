@@ -6,7 +6,6 @@
 
 ## 📸 Demo
 
-Add demo video section with embedded screen recording to showcase app functionality
 
 <!-- Experience the app in action:
 
