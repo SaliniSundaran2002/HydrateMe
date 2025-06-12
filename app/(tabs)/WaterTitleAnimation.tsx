@@ -9,6 +9,8 @@ import {
 import { Audio } from 'expo-av';
 import MaskedView from '@react-native-masked-view/masked-view';
 import { LinearGradient } from 'expo-linear-gradient';
+import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
+import { faGlassWater } from '@fortawesome/free-solid-svg-icons';
 
 export default function WaterTitleAnimation() {
   const fillAnim = useRef(new Animated.Value(0)).current;
@@ -46,33 +48,75 @@ export default function WaterTitleAnimation() {
     outputRange: [50, 0], // moves gradient up
   });
 
+  const AnimatedFontAwesomeIcon = Animated.createAnimatedComponent(FontAwesomeIcon);
+
+
   return (
     <View style={styles.container}>
       {/* Background Water Fill */}
       <Animated.View style={[styles.fill, { height: fillHeight }]} />
-
-      {/* Title with Gradient Fill Animation */}
       <View style={styles.titleContainer}>
+      <Animated.View
+  style={{
+    alignItems: 'center',
+    justifyContent: 'center',
+    transform: [
+      {
+        scale: fillAnim.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0.8, 1.2], // Slight bounce effect
+        }),
+      },
+    ],
+  }}
+>
+  {/* Masked Icon with Water Fill */}
+  <MaskedView
+    maskElement={
+      <FontAwesomeIcon
+        icon={faGlassWater}
+        size={40}
+        style={{ color: 'black' }}
+      />
+    }
+  >
+    <Animated.View
+      style={{
+        height: 50,
+        width: 40,
+        transform: [{ translateY: gradientTranslateY }],
+      }}
+    >
+      <LinearGradient
+        colors={['#00c6ff', '#ffffff']}
+        start={{ x: 0.5, y: 1 }}
+        end={{ x: 0.5, y: 0 }}
+        style={{ flex: 1 }}
+      />
+    </Animated.View>
+  </MaskedView>
+</Animated.View>
+
+      </View>
         <MaskedView
           maskElement={<Text style={styles.title}>Hydrate Me</Text>}
         >
           <Animated.View
-            style={{
-              height: 50,
-              width: 300,
-              transform: [{ translateY: gradientTranslateY }],
-            }}
+        style={{
+          height: 50,
+          width: 300,
+          transform: [{ translateY: gradientTranslateY }],
+        }}
           >
-            <LinearGradient
-              colors={['#00c6ff', '#ffffff']}
-              start={{ x: 0.5, y: 1 }}
-              end={{ x: 0.5, y: 0 }}
-              style={{ flex: 1 }}
-            />
+        <LinearGradient
+          colors={['#00c6ff', '#ffffff']}
+          start={{ x: 0.5, y: 1 }}
+          end={{ x: 0.5, y: 0 }}
+          style={{ flex: 1 }}
+        />
           </Animated.View>
         </MaskedView>
       </View>
-    </View>
   );
 }
 

@@ -33,6 +33,8 @@ export default function HomeScreen() {
   const [goalMl, setGoalMl] = useState(GOAL_ML);
   const [showCalculator, setShowCalculator] = useState(true);
   const [inputGoal, setInputGoal] = useState(String(GOAL_ML));
+  const [showReminder, setShowReminder] = useState(false);
+
 
   const calculateGoal = () => {
     const parsedGoal = parseInt(inputGoal, 10);
@@ -101,13 +103,18 @@ export default function HomeScreen() {
         </Text>
 
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginBottom: 10 }}>
-          <TouchableOpacity onPress={() => setShowHistory(!showHistory)} style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <FontAwesome name="clock-o" size={24} color="#0077b6" />
-            <Text style={{ marginLeft: 5, color: '#0077b6', fontSize: 16 }}>Set Reminder</Text>
-          </TouchableOpacity>
+        <TouchableOpacity
+  onPress={() => setShowReminder(!showReminder)}
+  style={{ flexDirection: 'row', alignItems: 'center' }}
+>
+  <FontAwesome name="clock-o" size={24} color="#0077b6" />
+  <Text style={{ marginLeft: 5, color: '#0077b6', fontSize: 16 }}>Set Reminder</Text>
+</TouchableOpacity>
+
         </View>
 
-        {showHistory && <WaterTracker />}
+        {showReminder && <WaterTracker />}
+
 
 
         <Text style={styles.progressText}>
