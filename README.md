@@ -7,9 +7,8 @@
 ## 📸 Demo
 
 
-<!-- Experience the app in action:
-
-[![Watch Demo](https://img.shields.io/badge/Watch-Demo-blue?style=for-the-badge)](https://your-demo-link.com) -->
+[![Watch Demo](/screenshots/Screenrecording.mp4)](/screenshots/Screenrecording.mp4
+)
 
 <video controls width="600">
     <source src="/screenshots/Screenrecording.mp4" type="video/mp4">
