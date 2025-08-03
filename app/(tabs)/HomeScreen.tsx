@@ -8,12 +8,18 @@ import {
   Alert,
   ScrollView,
   TextInput,
+  Modal,
+  FlatList,
+  Platform,
+  SafeAreaView,
 } from 'react-native';
-import { Calendar } from 'react-native-calendars';
-import moment from 'moment';
 import { FontAwesome, FontAwesome6 } from '@expo/vector-icons';
 import Entypo from '@expo/vector-icons/Entypo';
-import WaterTracker from './WaterTracker';
+import moment from 'moment';
+import DateTimePicker from '@react-native-community/datetimepicker';
+
+const GOAL_ML = 2000;
+const CUP_ML = 250;
 
 type WaterEntry = {
   date: string;
@@ -21,20 +27,19 @@ type WaterEntry = {
   amount: number;
 };
 
-const GOAL_ML = 2000;
-const CUP_ML = 250;
-
 export default function HomeScreen() {
   const [consumed, setConsumed] = useState(0);
   const fillHeight = useRef(new Animated.Value(0)).current;
   const [history, setHistory] = useState<WaterEntry[]>([]);
-  const [showHistory, setShowHistory] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(moment().format('YYYY-MM-DD'));
   const [goalMl, setGoalMl] = useState(GOAL_ML);
   const [showCalculator, setShowCalculator] = useState(true);
   const [inputGoal, setInputGoal] = useState(String(GOAL_ML));
-  const [showReminder, setShowReminder] = useState(false);
 
+  // Settings modal state
+  const [settingsVisible, setSettingsVisible] = useState(false);
+  const [reminderTime, setReminderTime] = useState<number | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState<boolean | string>(false);
+  const [selectedDate, setSelectedDate] = useState<string>(moment().format('YYYY-MM-DD'));
 
   const calculateGoal = () => {
     const parsedGoal = parseInt(inputGoal, 10);
@@ -55,7 +60,7 @@ export default function HomeScreen() {
 
   if (showCalculator) {
     return (
-      <View style={styles.calculatorContainer}>
+      <SafeAreaView style={styles.calculatorContainer}>
         <Text style={styles.calculatorTitle}>Set Your Daily Water Goal</Text>
         <TextInput
           style={styles.calculatorInput}
@@ -67,7 +72,7 @@ export default function HomeScreen() {
         <TouchableOpacity style={styles.button} onPress={calculateGoal}>
           <Text style={styles.buttonText}>Set Goal</Text>
         </TouchableOpacity>
-      </View>
+      </SafeAreaView>
     );
   }
 
@@ -93,29 +98,149 @@ export default function HomeScreen() {
     }
   };
 
+  // Filter history by selected date
   const filteredHistory = history.filter(entry => entry.date === selectedDate);
 
   return (
-    <View style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#e0f7fa' }}>
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={true}>
-        <Text style={styles.title}>
-          Hydrate Me <FontAwesome6 name="bottle-water" size={32} color="#0000FF" />
-        </Text>
+        {/* Settings Modal */}
+        <Modal
+          visible={settingsVisible}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setSettingsVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 10, textAlign: 'left' }}>Settings</Text>
+              {/* Update Goal Section */}
+              <View style={{ width: '100%', alignItems: 'center', marginBottom: 16 }}>
+                <Text style={{ fontWeight: 'bold', fontSize: 16, marginBottom: 6 }}>Update Daily Goal</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <TextInput
+                    style={[
+                      styles.calculatorInput,
+                      { width: 100, marginBottom: 0, marginRight: 8, fontSize: 16, padding: 8 },
+                    ]}
+                    keyboardType="numeric"
+                    value={inputGoal}
+                    onChangeText={setInputGoal}
+                    placeholder="ml"
+                  />
+                  <TouchableOpacity
+                    style={[styles.button, { paddingVertical: 8, paddingHorizontal: 16, marginTop: 0 }]}
+                    onPress={calculateGoal}
+                  >
+                    <Text style={[styles.buttonText, { marginRight: 0 }]}>Update</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+              {/* Set Reminder Interval */}
+              <Text style={{ fontWeight: 'bold', marginBottom: 8 }}>Set Reminder Interval</Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
+                {[30, 60, 120].map((min) => (
+                  <TouchableOpacity
+                    key={min}
+                    style={[
+                      styles.button,
+                      {
+                        backgroundColor: reminderTime === min ? '#0077b6' : '#00b4d8',
+                        paddingVertical: 8,
+                        paddingHorizontal: 16,
+                        marginHorizontal: 4,
+                      },
+                    ]}
+                    onPress={() => setReminderTime(min)}
+                  >
+                    <Text style={styles.buttonText}>
+                      {min === 30 ? '30 min' : `${min / 60} hour${min > 60 ? 's' : ''}`}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              {/* History by Date */}
+              <View style={{ marginTop: 20 }}>
+                <Text style={{ fontWeight: 'bold', marginBottom: 5 }}>View History by Date</Text>
+                <TouchableOpacity
+                  style={[styles.button, { paddingVertical: 8, marginTop: 0 }]}
+                  onPress={() => setShowDatePicker('date')}
+                >
+                  <Text style={styles.buttonText}>
+                    {moment(selectedDate).format('YYYY-MM-DD')}
+                  </Text>
+                </TouchableOpacity>
+                {/* Date Picker for History */}
+                {showDatePicker === 'date' && (
+                  <DateTimePicker
+                    value={moment(selectedDate).toDate()}
+                    mode="date"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    onChange={(_, selected) => {
+                      setShowDatePicker(false);
+                      if (selected) setSelectedDate(moment(selected).format('YYYY-MM-DD'));
+                    }}
+                  />
+                )}
+                <FlatList
+                  data={filteredHistory}
+                  keyExtractor={(item, idx) => `${item.date}-${item.time}-${item.amount}-${idx}`}
+                  ListEmptyComponent={<Text style={{ color: '#888', marginTop: 10 }}>No entries</Text>}
+                  renderItem={({ item }) => (
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginVertical: 4 }}>
+                      <Text>{item.time}</Text>
+                      <Text>{item.amount}ml</Text>
+                    </View>
+                  )}
+                  style={{ marginTop: 10, maxHeight: 120 }}
+                />
+              </View>
+              <TouchableOpacity
+                style={[styles.button, { backgroundColor: '#888', marginTop: 20 }]}
+                onPress={() => setSettingsVisible(false)}
+              >
+                <Text style={styles.buttonText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
 
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginBottom: 10 }}>
-        <TouchableOpacity
-  onPress={() => setShowReminder(!showReminder)}
-  style={{ flexDirection: 'row', alignItems: 'center' }}
+        <View
+  style={{
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  }}
 >
-  <FontAwesome name="clock-o" size={24} color="#0077b6" />
-  <Text style={{ marginLeft: 5, color: '#0077b6', fontSize: 16 }}>Set Reminder</Text>
-</TouchableOpacity>
+  <TouchableOpacity
+    onPress={() => setSettingsVisible(true)}
+    style={{
+      backgroundColor: '#0077b6',
+      borderRadius: 100,
+      padding: 8,
+      elevation: 2,
+    }}
+    accessibilityLabel="Settings"
+  >
+    <FontAwesome name="cog" size={24} color="#fff" />
+  </TouchableOpacity>
 
-        </View>
+  <Text style={[styles.title, { marginBottom: 0 }]}>
+    Hydrate Me <FontAwesome6 name="bottle-water" size={28} color="#0000FF" />
+  </Text>
 
-        {showReminder && <WaterTracker />}
+  <View style={{ width: 40 }} />
+</View>
 
-
+<View style={{ marginBottom: 20, alignItems: 'center' }}>
+  <Text style={{ color: '#0077b6', fontSize: 16 }}>
+    {consumed < goalMl
+      ? '💧 Don’t forget to drink water regularly!'
+      : '🎉 You reached your goal! Stay hydrated!'}
+  </Text>
+</View>
 
         <Text style={styles.progressText}>
           {consumed}ml / {goalMl}ml
@@ -129,7 +254,6 @@ export default function HomeScreen() {
               {Array.from({ length: Math.floor(goalMl / 250) + 1 }, (_, i) => {
                 const ml = i * 250;
                 const topPercent = 100 - (ml / goalMl) * 100;
-
                 return (
                   <Text
                     key={i}
@@ -148,8 +272,6 @@ export default function HomeScreen() {
                   </Text>
                 );
               })}
-
-
 
               <Animated.View
                 style={[
@@ -172,179 +294,139 @@ export default function HomeScreen() {
             <Entypo name="drop" size={24} color="white" />
           </Text>
         </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.button, { backgroundColor: '#90e0ef' }]}
-          onPress={() => setShowHistory(!showHistory)}
-        >
-          <Text style={styles.buttonText}>
-            {showHistory ? 'Hide History 📉' : 'Show History 📈'}
-          </Text>
-        </TouchableOpacity>
-
-        {showHistory && (
-          <>
-            <Calendar
-              onDayPress={day => setSelectedDate(day.dateString)}
-              markedDates={{
-                [selectedDate]: { selected: true, selectedColor: '#00b4d8' },
-              }}
-              style={{ marginTop: 20, width: '100%' }}
-            />
-
-            <View style={{ maxHeight: 200, marginTop: 10, width: '100%' }}>
-              <Text style={[styles.historyTitle, { marginBottom: 5 }]}>
-                Water Intake on {selectedDate}
-              </Text>
-
-              {filteredHistory.length === 0 ? (
-                <Text style={styles.historyText}>No water consumed on this day.</Text>
-              ) : (
-                filteredHistory.map((entry, idx) => (
-                  <Text key={idx} style={styles.historyText}>
-                    {idx + 1}. {entry.time} - Drank {entry.amount}ml
-                  </Text>
-                ))
-              )}
-            </View>
-          </>
-        )}
       </ScrollView>
-
-
-
-
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flexGrow: 1,
-    backgroundColor: '#D6F6FF',
+    padding: 24,
+    paddingTop: 40,
     alignItems: 'center',
-    justifyContent: 'flex-start',
-    paddingVertical: 30,
-    paddingHorizontal: 20,
-    paddingBottom: 80,
+    backgroundColor: '#e0f7fa',
+    minHeight: '100%',
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#0077b6',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  progressText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#023e8a',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  bottleSection: {
+    alignItems: 'center',
+    marginVertical: 24,
+  },
+  bottleWrapper: {
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+  bottleCap: {
+    width: 40,
+    height: 12,
+    backgroundColor: '#0077b6',
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
+    marginBottom: 2,
+  },
+  bottleNeck: {
+    width: 24,
+    height: 18,
+    backgroundColor: '#90e0ef',
+    borderRadius: 6,
+    marginBottom: 2,
+  },
+  bottleBody: {
+    width: 100,
+    height: 280,
+    backgroundColor: '#caf0f8',
+    borderRadius: 30,
+    borderWidth: 2,
+    borderColor: '#0077b6',
+    overflow: 'hidden',
+    position: 'relative',
+    justifyContent: 'flex-end',
+  },
+  waterFill: {
+    position: 'absolute',
+    left: 0,
+    bottom: 0,
+    width: '100%',
+    backgroundColor: '#48cae4',
+    borderBottomLeftRadius: 18,
+    borderBottomRightRadius: 18,
+    zIndex: 1,
+  },
+  measurementText: {
+    position: 'absolute',
+    left: 5,
+    color: '#004e64',
+    fontSize: 12,
+  },
+  button: {
+    backgroundColor: '#00b4d8',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 20,
+    alignItems: 'center',
+    marginTop: 16,
+    elevation: 2,
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  buttonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+    marginRight: 6,
   },
   calculatorContainer: {
     flex: 1,
-    backgroundColor: '#D6F6FF',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 30,
+    backgroundColor: '#e0f7fa',
+    padding: 24,
   },
   calculatorTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 20,
     color: '#0077b6',
+    marginBottom: 20,
   },
   calculatorInput: {
-    width: '100%',
     borderWidth: 1,
     borderColor: '#0077b6',
-    borderRadius: 8,
+    borderRadius: 10,
     padding: 12,
+    width: 200,
     fontSize: 18,
     marginBottom: 20,
     backgroundColor: '#fff',
+    textAlign: 'center',
   },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#0077b6',
-    marginRight: 8,
-    marginTop: 10
-  },
-  progressText: {
-    fontSize: 18,
-    marginBottom: 20,
-    color: '#0077b6',
-  },
-  bottleSection: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-  },
-  measurementLabels: {
-    justifyContent: 'space-between',
-    height: 260,
-    paddingRight: 15,
-  },
-  measurementText: {
-    position: 'absolute',
-    left: -45,
-    fontSize: 12,
-    color: '#0077b6',
-  },
-  bottleWrapper: {
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
   },
-  bottleCap: {
-    width: 40,
-    height: 20,
-    backgroundColor: '#0077b6',
-    borderTopLeftRadius: 10,
-    borderTopRightRadius: 10,
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    padding: 24,
+    width: 320,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
   },
-  bottleNeck: {
-    width: 60,
-    height: 30,
-    backgroundColor: '#00b4d8',
-    borderBottomLeftRadius: 10,
-    borderBottomRightRadius: 10,
-    marginBottom: -1,
-  },
-  bottleBody: {
-    width: 120,
-    height: 400,
-    backgroundColor: '#e0f7fa',
-    borderColor: '#0077b6',
-    borderWidth: 4,
-    borderRadius: 60,
-    overflow: 'hidden',
-    justifyContent: 'flex-end',
-    position: 'relative',
-  },
-  waterFill: {
-    backgroundColor: '#00b4d8',
-    width: '100%',
-    position: 'absolute',
-    bottom: 0,
-  },
-  button: {
-    marginTop: 20,
-    backgroundColor: '#00b4d8',
-    paddingHorizontal: 30,
-    paddingVertical: 15,
-    borderRadius: 25,
-    elevation: 4,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  historyContainer: {
-    marginTop: 20,
-    padding: 15,
-    backgroundColor: '#e0f7fa',
-    borderRadius: 10,
-    width: '80%',
-    maxHeight: 200,
-  },
-  historyTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#0077b6',
-  },
-  historyText: {
-    fontSize: 14,
-    color: '#023e8a',
-    marginBottom: 5,
-  },
-
 });

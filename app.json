@@ -1,49 +1,22 @@
 {
   "expo": {
-    "name": "HydrateMe",
-    "slug": "HydrateMe",
+    "name": "Hydrate Me",
+    "slug": "hydrate-me",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "hydrateme",
-    "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.HydrateMe"
+
+    "updates": {
+      "fallbackToCacheTimeout": 0
     },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
-      "edgeToEdgeEnabled": true,
-      "package": "com.anonymous.HydrateMe"
-    },
-    "web": {
-      "bundler": "metro",
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
-    },
-    "plugins": [
-      "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
-        }
-      ]
+    "assetBundlePatterns": [
+      "**/*"
     ],
-    "experiments": {
-      "typedRoutes": true
+    "android": {
+      "package": "com.salini.hydrateme"
     },
     "extra": {
-      "router": {},
       "eas": {
-        "projectId": "ede4fc6e-99ce-4b35-af15-eb4ab8fef19e"
+        "projectId": "b84f7603-16ce-4a6c-8d8a-ef71ecf588ed"
       }
     }
   }

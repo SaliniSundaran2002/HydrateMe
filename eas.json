@@ -6,5 +6,8 @@
         "buildType": "apk"
       }
     }
+  },
+  "cli": {
+    "appVersionSource": "local"
   }
 }
